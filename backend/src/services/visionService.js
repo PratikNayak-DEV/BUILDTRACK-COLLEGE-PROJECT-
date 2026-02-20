@@ -14,14 +14,7 @@ const client = env.googleCredentialsJson
  * @returns {Promise<string[]>}
  */
 async function detectImageObjects(imageUrl) {
-  const [result] = await client.labelDetection({
-    image: {
-      source: {
-        imageUri: imageUrl,
-      },
-    },
-  });
-
+  const [result] = await client.labelDetection(imageUrl);
   const labels = result.labelAnnotations || [];
 
   return labels.map((label) => String(label.description || '').toLowerCase()).filter(Boolean);
