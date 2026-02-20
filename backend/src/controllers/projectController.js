@@ -3,7 +3,6 @@ const ProgressRecord = require('../models/ProgressRecord');
 
 async function createProject(req, res) {
   const { name, numberOfBuildings } = req.body;
-  const owner = req.user.userId;
 
   if (!name || !numberOfBuildings) {
     return res.status(400).json({
@@ -12,20 +11,8 @@ async function createProject(req, res) {
     });
   }
 
-  const normalizedName = String(name).trim();
-
-  const existing = await Project.findOne({ owner, name: normalizedName });
-  if (existing) {
-    return res.status(200).json({
-      success: true,
-      message: 'Project already exists for this user.',
-      data: existing,
-    });
-  }
-
   const project = await Project.create({
-    owner,
-    name: normalizedName,
+    name,
     numberOfBuildings: Number(numberOfBuildings),
   });
 
@@ -35,21 +22,10 @@ async function createProject(req, res) {
   });
 }
 
-async function listProjects(req, res) {
-  const owner = req.user.userId;
-  const projects = await Project.find({ owner }).sort({ createdAt: -1 }).lean();
-
-  return res.json({
-    success: true,
-    data: projects,
-  });
-}
-
 async function getProjectById(req, res) {
   const { id } = req.params;
-  const owner = req.user.userId;
 
-  const project = await Project.findOne({ _id: id, owner }).lean();
+  const project = await Project.findById(id).lean();
   if (!project) {
     return res.status(404).json({
       success: false,
@@ -70,9 +46,8 @@ async function getProjectById(req, res) {
 
 async function getProjectHistory(req, res) {
   const { id } = req.params;
-  const owner = req.user.userId;
 
-  const project = await Project.findOne({ _id: id, owner }).lean();
+  const project = await Project.findById(id).lean();
   if (!project) {
     return res.status(404).json({
       success: false,
@@ -93,7 +68,6 @@ async function getProjectHistory(req, res) {
 
 module.exports = {
   createProject,
-  listProjects,
   getProjectById,
   getProjectHistory,
 };

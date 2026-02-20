@@ -1,52 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import api from '../api/client';
 import ErrorAlert from '../components/ErrorAlert';
 
 const categories = ['Foundation', 'Superstructure', 'Facade', 'Interiors', 'Furnishing'];
 
 export default function UploadPage() {
-  const [projects, setProjects] = useState([]);
-  const [form, setForm] = useState({
-    projectMode: 'new',
-    projectId: '',
-    projectName: '',
-    numberOfBuildings: 1,
-    category: 'Foundation',
-    image: null,
-  });
+  const [form, setForm] = useState({ projectName: '', numberOfBuildings: 1, category: 'Foundation', image: null });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const response = await api.get('/projects');
-        const data = response.data.data || [];
-        setProjects(data);
-        if (data.length > 0) {
-          setForm((prev) => ({ ...prev, projectId: data[0]._id }));
-        }
-      } catch {
-        // Non-blocking for upload form.
-      }
-    })();
-  }, []);
-
   const onChange = (e) => setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-
-  const resolveProjectId = async () => {
-    if (form.projectMode === 'existing') {
-      if (!form.projectId) throw new Error('Please select an existing project.');
-      return form.projectId;
-    }
-
-    const projectRes = await api.post('/projects', {
-      name: form.projectName,
-      numberOfBuildings: Number(form.numberOfBuildings),
-    });
-
-    return projectRes.data.data._id;
-  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -54,7 +17,14 @@ export default function UploadPage() {
     setSuccess('');
 
     try {
-      const projectId = await resolveProjectId();
+      const projectRes = await api.post('/projects', {
+        name: form.projectName,
+        numberOfBuildings: Number(form.numberOfBuildings),
+      });
+
+      const projectId = projectRes.data.data._id;
+      const ids = JSON.parse(localStorage.getItem('buildtrack_projects') || '[]');
+      localStorage.setItem('buildtrack_projects', JSON.stringify(Array.from(new Set([...ids, projectId]))));
 
       const body = new FormData();
       body.append('projectId', projectId);
@@ -67,7 +37,7 @@ export default function UploadPage() {
 
       setSuccess('Upload completed successfully.');
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Upload failed.');
+      setError(err.response?.data?.message || 'Upload failed.');
     }
   };
 
@@ -78,32 +48,16 @@ export default function UploadPage() {
       {success && <p className="mb-4 rounded border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{success}</p>}
 
       <form className="space-y-4 rounded border bg-white p-4" onSubmit={onSubmit}>
-        <div className="flex gap-4">
-          <label className="text-sm"><input type="radio" name="projectMode" value="new" checked={form.projectMode === 'new'} onChange={onChange} /> New</label>
-          <label className="text-sm"><input type="radio" name="projectMode" value="existing" checked={form.projectMode === 'existing'} onChange={onChange} /> Existing</label>
-        </div>
-
-        {form.projectMode === 'new' ? (
-          <>
-            <input name="projectName" placeholder="Project Name" className="w-full rounded border p-2" onChange={onChange} required />
-            <input
-              name="numberOfBuildings"
-              type="number"
-              min="1"
-              className="w-full rounded border p-2"
-              value={form.numberOfBuildings}
-              onChange={onChange}
-              required
-            />
-          </>
-        ) : (
-          <select name="projectId" className="w-full rounded border p-2" value={form.projectId} onChange={onChange} required>
-            {projects.map((p) => (
-              <option key={p._id} value={p._id}>{p.name}</option>
-            ))}
-          </select>
-        )}
-
+        <input name="projectName" placeholder="Project Name" className="w-full rounded border p-2" onChange={onChange} required />
+        <input
+          name="numberOfBuildings"
+          type="number"
+          min="1"
+          className="w-full rounded border p-2"
+          value={form.numberOfBuildings}
+          onChange={onChange}
+          required
+        />
         <select name="category" className="w-full rounded border p-2" value={form.category} onChange={onChange}>
           {categories.map((c) => (
             <option key={c} value={c}>{c}</option>

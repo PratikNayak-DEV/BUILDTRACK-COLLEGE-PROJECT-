@@ -22,7 +22,7 @@ async function uploadProgress(req, res) {
     });
   }
 
-  const project = await Project.findOne({ _id: projectId, owner: req.user.userId });
+  const project = await Project.findById(projectId);
   if (!project) {
     return res.status(404).json({
       success: false,
@@ -30,10 +30,16 @@ async function uploadProgress(req, res) {
     });
   }
 
+  // 1) Upload site image to Cloudinary
   const imageUrl = await uploadImageBuffer(req.file.buffer);
+
+  // 2) Detect image objects with Vision API
   const detectedObjects = await detectImageObjects(imageUrl);
+
+  // 3) Map objects to construction stage + weight-based progress
   const stageResult = detectConstructionStage(detectedObjects);
 
+  // 4) Validate user selected category with detected stage
   const validation = validateSelectedCategory(category, stageResult.detectedStage);
   if (!validation.isValid) {
     return res.status(400).json({
@@ -45,8 +51,10 @@ async function uploadProgress(req, res) {
     });
   }
 
+  // 5) Fetch previous record before inserting new one for comparison summary
   const previousRecord = await ProgressRecord.findOne({ projectId }).sort({ uploadedAt: -1 });
 
+  // 6) Save current progress record
   const savedRecord = await ProgressRecord.create({
     projectId,
     imageUrl,
