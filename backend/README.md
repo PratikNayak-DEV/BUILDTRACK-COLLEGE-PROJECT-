@@ -11,17 +11,25 @@ Node.js + Express API for AI-assisted construction progress monitoring.
 - `src/middlewares/` - Error and request middlewares
 - `src/models/` - Mongoose schemas/models
 - `src/routes/` - API route definitions
-- `src/services/` - Reusable services (Vision API, uploads, etc.)
+- `src/services/` - Reusable services (Vision API, uploads, rule engine, comparison)
 - `src/utils/` - Utility helpers/constants
 - `src/validations/` - Validation schemas
 
-## Step 2-3 Implemented
+## Step 2-4 Implemented
 
 - Express server setup with security and logging middleware.
 - MongoDB connection via Mongoose.
 - Cloudinary SDK configuration.
 - Google Vision API integration service for object detection.
 - Rule engine for mapping detected objects to construction stages.
+- Project and progress models with REST APIs.
+
+## APIs
+
+- `POST /api/projects` - create project
+- `POST /api/upload-progress` - upload project progress image + category
+- `GET /api/project/:id` - get project detail with latest progress
+- `GET /api/project/:id/history` - get complete upload history
 
 ## Setup
 
